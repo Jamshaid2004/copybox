@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CopyBox</string>
+    <string name="accessibility_service_description">CopyBox monitors your clipboard to save copied text. This allows the app to track what you copy even when it\'s running in the background. Your clipboard data is stored locally on your device and is never shared.</string>
+    <string name="clipboard_accessibility_description">Automatically saves copied text to CopyBox</string>
+
+</resources>
