@@ -9,6 +9,11 @@ class ClipboardAccessibilityService : AccessibilityService() {
 
     private lateinit var clipboardManager: ClipboardManager
     private var listener: ClipboardManager.OnPrimaryClipChangedListener? = null
+    private var lastClipboardText: String? = null
+    private val PREF_NAME = "clipboard_dedupe"
+    private val KEY_LAST_TEXT = "last_sent_text"
+
+
 
     companion object {
         @Volatile
@@ -29,6 +34,11 @@ class ClipboardAccessibilityService : AccessibilityService() {
 
         isRunning = true
 
+        val prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+lastClipboardText = prefs.getString(KEY_LAST_TEXT, null)
+
+Log.d(TAG, "📦 Restored lastClipboardText = ${lastClipboardText?.take(60)}")
+
         // Clipboard manager setup
         clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
 
@@ -37,6 +47,7 @@ class ClipboardAccessibilityService : AccessibilityService() {
             captureClipboard("Listener fallback")
         }
         clipboardManager.addPrimaryClipChangedListener(listener!!)
+
         Log.d(TAG, "✅ Clipboard listener registered")
     }
 
@@ -51,18 +62,41 @@ class ClipboardAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun captureClipboard(source: String) {
-        try {
-            val clip = clipboardManager.primaryClip
-            val text = clip?.getItemAt(0)?.coerceToText(this)?.toString()
-            if (!text.isNullOrBlank()) {
-                ClipboardStore.add(applicationContext, text)
-                Log.d(TAG, "✅ Clipboard captured via $source: '${text.take(50)}...'")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error capturing clipboard: ${e.message}", e)
-        }
+   private fun captureClipboard(source: String) {
+    try {
+        val clip = clipboardManager.primaryClip
+        val text = clip?.getItemAt(0)
+            ?.coerceToText(this)
+            ?.toString()
+            ?.trim()
+
+        if (text.isNullOrBlank()) return
+
+         Log.d(TAG, "LAST CLIPBOARD TEXT WAS : ${lastClipboardText?.take(80)}")
+         Log.d(TAG, "CURRENT TEXT IS : ${text.take(80)}")
+
+        // 🔥 DEDUPE — only send if changed
+        if (text == lastClipboardText) {
+            Log.d(TAG, "DUPLICATE DATA RECIEVED")
+    return
+}
+
+lastClipboardText = text
+  getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+            .edit()
+            .putString(KEY_LAST_TEXT, text)
+            .apply()
+
+        Log.d(TAG, "📤 Sending clipboard to Flutter: ${text.take(80)}")
+
+        MainActivity.eventSink?.success(text)
+
+    } catch (e: Exception) {
+        Log.e(TAG, "❌ Error capturing clipboard", e)
     }
+}
+
+
 
     override fun onInterrupt() {
         Log.d(TAG, "onInterrupt called")

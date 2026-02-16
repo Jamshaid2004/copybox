@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.copybox"
-    compileSdk = 35 // Updated to 34
+    compileSdk = 36 // Updated to 34
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
